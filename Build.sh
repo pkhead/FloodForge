@@ -77,4 +77,5 @@ if [ $? -eq 0 ]; then
     fi
 else
     echo "Compilation failed."
+    exit 1
 fi
