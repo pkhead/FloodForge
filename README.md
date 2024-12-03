@@ -29,7 +29,7 @@ If you want to have a permanent executable that you can run whenever, use this o
 Use this if you are editing the code and need to quickly test
 `./Build.bat --debug`
 
-### Shell script
+#### Shell script
 The build.sh script also works under Msys2.
 
 First, install Make:
@@ -37,7 +37,12 @@ First, install Make:
 pacman -S make
 ```
 
-Then refer to the Linux build instructions.
+Then run one of these three commands:
+```bash
+./Build.sh
+./Build.sh --debug
+./Build.sh --release
+```
 
 ### Linux
 > [!WARNING]  
@@ -49,6 +54,7 @@ Requirements:
 - Make
 
 ```bash
+chmod +x Build.sh # make file executable
 ./Build.sh
 
 # build in debug mode
