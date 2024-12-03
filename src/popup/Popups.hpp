@@ -12,6 +12,7 @@
 class Popup {
 	public:
 		Popup(Window *window);
+		virtual ~Popup() {};
 
 		virtual void draw(double mouseX, double mouseY, bool mouseInside);
 
