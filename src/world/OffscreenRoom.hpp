@@ -36,21 +36,21 @@ class OffscreenRoom : public Room {
 
 		void draw(Vector2 mousePosition, double lineSize) override {
 			Draw::color(1.00f, 1.00f, 1.00f);
-			fillRect(position->x, position->y, position->x + width, position->y - height);
+			fillRect(position.x, position.y, position.x + width, position.y - height);
 
 			Draw::color(0.00f, 0.00f, 0.00f);
-			Fonts::rainworld->writeCentred(this->roomName, position->x + (width * 0.5), position->y - (height * 0.5), 5, CENTRE_XY);
+			Fonts::rainworld->writeCentred(this->roomName, position.x + (width * 0.5), position.y - (height * 0.5), 5, CENTRE_XY);
 
 			if (inside(mousePosition)) {
 				Draw::color(0.00f, 0.75f, 0.00f);
 			} else {
 				Draw::color(0.75f, 0.75f, 0.75f);
 			}
-			strokeRect(position->x, position->y, position->x + width, position->y - height);
+			strokeRect(position.x, position.y, position.x + width, position.y - height);
 
 #ifdef DEBUG_ROOMS
 			Draw::color(1.00f, 1.00f, 0.00f);
-			strokerect(coord->x - 1, coord->y + 1, coord->x + 1, coord->y - 1);
+			strokerect(coord.x - 1, coord.y + 1, coord.x + 1, coord.y - 1);
 #endif
 		}
 };

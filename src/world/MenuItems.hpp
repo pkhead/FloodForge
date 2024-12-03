@@ -193,7 +193,7 @@ class MenuItems {
 
 					rooms.push_back(room);
 
-					Vector2 *position = room->Position();
+					Vector2 &position = room->Position();
 
 					std::string temp;
 					std::stringstream data(line.substr(line.find(':') + 1));
@@ -218,8 +218,8 @@ class MenuItems {
 					std::getline(data, temp, '>'); // Subregion
 					std::string subregion = temp;
 
-					position->x = x - room->Width() * 0.5;
-					position->y = y + room->Height() * 0.5;
+					position.x = x - room->Width() * 0.5;
+					position.y = y + room->Height() * 0.5;
 					room->Layer(layer);
 
 					if (subregion.empty()) {
@@ -421,10 +421,10 @@ class MenuItems {
 
 			std::cout << "Exporting rooms" << std::endl;
 			for (Room *room : rooms) {
-				Vector2 *roomPosition = room->Position();
+				Vector2 &roomPosition = room->Position();
 				Vector2 position = Vector2(
-					(roomPosition->x + room->Width() * 0.5) * 3.0,
-					(roomPosition->y - room->Height() * 0.5) * 3.0
+					(roomPosition.x + room->Width() * 0.5) * 3.0,
+					(roomPosition.y - room->Height() * 0.5) * 3.0
 				);
 
 				file << std::setprecision(12);
@@ -499,10 +499,10 @@ class MenuItems {
 			Rect bounds;
 
 			for (Room *room : rooms) {
-				double left   = room->Position()->x;
-				double right  = room->Position()->x + room->Width();
-				double top    = -room->Position()->y + room->Height();
-				double bottom = -room->Position()->y;
+				double left   = room->Position().x;
+				double right  = room->Position().x + room->Width();
+				double top    = -room->Position().y + room->Height();
+				double bottom = -room->Position().y;
 				bounds.X0(std::min(bounds.X0(), left));
 				bounds.X1(std::max(bounds.X1(), right));
 				bounds.Y0(std::min(bounds.Y0(), bottom));
@@ -552,8 +552,8 @@ class MenuItems {
 				if (room->Tag() == "OffscreenRoom") continue;
 
 				// Top left corner
-				int x = std::floor(room->Position()->x - room->Width() * 0.0 - bounds.X0()) + padding;
-				int y = std::floor(-room->Position()->y - room->Height() * 0.0 - bounds.Y0()) + padding;
+				int x = std::floor(room->Position().x - room->Width() * 0.0 - bounds.X0()) + padding;
+				int y = std::floor(-room->Position().y - room->Height() * 0.0 - bounds.Y0()) + padding;
 				y += (2 - room->Layer()) * height / 3;
 
 				for (int ox = 0; ox < room->Width(); ox++) {

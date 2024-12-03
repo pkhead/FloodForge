@@ -280,8 +280,8 @@ int main() {
 
 			if (hoveringRoom != nullptr) {
 				tilePosition = Vector2i(
-					floor(worldMouse.x - hoveringRoom->Position()->x),
-					-1 - floor(worldMouse.y - hoveringRoom->Position()->y)
+					floor(worldMouse.x - hoveringRoom->Position().x),
+					-1 - floor(worldMouse.y - hoveringRoom->Position().y)
 				);
 			} else {
 				tilePosition = Vector2i(-1, -1);
@@ -307,7 +307,7 @@ int main() {
 					}
 
 					if (valid) {
-						connectionStart = new Vector2(floor(worldMouse.x - hoveringRoom->Position()->x) + 0.5 + hoveringRoom->Position()->x, floor(worldMouse.y - hoveringRoom->Position()->y) + 0.5 + hoveringRoom->Position()->y);
+						connectionStart = new Vector2(floor(worldMouse.x - hoveringRoom->Position().x) + 0.5 + hoveringRoom->Position().x, floor(worldMouse.y - hoveringRoom->Position().y) + 0.5 + hoveringRoom->Position().y);
 						connectionEnd   = new Vector2(connectionStart);
 						currentConnection = new Connection(hoveringRoom, connectionId, nullptr, 0);
 					}
@@ -330,8 +330,8 @@ int main() {
 				}
 
 				if (snap) {
-					connectionEnd->x = floor(worldMouse.x - hoveringRoom->Position()->x) + 0.5 + hoveringRoom->Position()->x;
-					connectionEnd->y = floor(worldMouse.y - hoveringRoom->Position()->y) + 0.5 + hoveringRoom->Position()->y;
+					connectionEnd->x = floor(worldMouse.x - hoveringRoom->Position().x) + 0.5 + hoveringRoom->Position().x;
+					connectionEnd->y = floor(worldMouse.y - hoveringRoom->Position().y) + 0.5 + hoveringRoom->Position().y;
 					currentConnection->RoomB(hoveringRoom);
 					currentConnection->ConnectionB(connectionId);
 
@@ -416,7 +416,7 @@ int main() {
 				}
 			} else {
 				if (holdingRoom != nullptr) {
-					holdingRoom->Position()->add(worldMouse - holdingStart);
+					holdingRoom->Position().add(worldMouse - holdingStart);
 					holdingStart = worldMouse;
 				}
 

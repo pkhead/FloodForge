@@ -64,21 +64,16 @@ class Room {
 		}
 
 		virtual ~Room() {
-			delete position;
-			delete coord;
-			delete geometry;
-
-			position = nullptr;
-			coord = nullptr;
+			delete[] geometry;
 			geometry = nullptr;
 		}
 
 		bool inside(Vector2 otherPosition) {
 			return (
-				otherPosition.x >= position->x &&
-				otherPosition.y >= position->y - height &&
-				otherPosition.x <= position->x + width &&
-				otherPosition.y <= position->y
+				otherPosition.x >= position.x &&
+				otherPosition.y >= position.y - height &&
+				otherPosition.x <= position.x + width &&
+				otherPosition.y <= position.y
 			);
 		}
 
@@ -87,10 +82,10 @@ class Room {
 			Vector2 cornerMax = Vector2::max(corner0, corner1);
 
 			return (
-				cornerMin.x >= position->x &&
-				cornerMin.y >= position->y - height &&
-				cornerMax.x <= position->x + width &&
-				cornerMax.y <= position->y
+				cornerMin.x >= position.x &&
+				cornerMin.y >= position.y - height &&
+				cornerMax.x <= position.x + width &&
+				cornerMax.y <= position.y
 			);
 		}
 
@@ -134,7 +129,7 @@ class Room {
 			}
 
 			glColor(Colour(1.0, 1.0, 1.0).mix(tint, tintAmount));
-			fillRect(position->x, position->y, position->x + width, position->y - height);
+			fillRect(position.x, position.y, position.x + width, position.y - height);
 
 			Draw::begin(Draw::QUADS);
 			for (int x = 0; x < width; x++) {
@@ -142,10 +137,10 @@ class Room {
 					int tileType = getTile(x, y) % 16;
 					int tileData = getTile(x, y) / 16;
 
-					float x0 = position->x + x;
-					float y0 = position->y - y;
-					float x1 = position->x + x + 1;
-					float y1 = position->y - y - 1;
+					float x0 = position.x + x;
+					float y0 = position.y - y;
+					float x1 = position.x + x + 1;
+					float y1 = position.y - y - 1;
 					float x2 = (x0 + x1) * 0.5;
 					float y2 = (y0 + y1) * 0.5;
 
@@ -248,8 +243,8 @@ class Room {
 					for (int y = 0; y < height; y++) {
 						if (!((getTile(x, y) / 16) & 4)) continue;
 
-						float x0 = position->x + x;
-						float y0 = position->y - y;
+						float x0 = position.x + x;
+						float y0 = position.y - y;
 
 						glColor(Colour(1.0, 1.0, 1.0).mix(tint, tintAmount));
 						Fonts::rainworld->writeCentred(std::to_string(getConnection(Vector2i(x, y))), x0 + 0.5, y0 - 0.5, 3.0, CENTER_XY);
@@ -259,7 +254,7 @@ class Room {
 
 			if (water != -1) {
 				glColor(Colour(0.0, 0.0, 0.5, 0.5).mix(tint, tintAmount));
-				fillRect(position->x, position->y - (height - std::min(water, height)), position->x + width, position->y - height);
+				fillRect(position.x, position.y - (height - std::min(water, height)), position.x + width, position.y - height);
 			}
 
 			if (inside(mousePosition)) {
@@ -267,26 +262,30 @@ class Room {
 			} else {
 				glColor(Colour(0.75, 0.75, 0.75).mix(tint, tintAmount));
 			}
-			strokeRect(position->x, position->y, position->x + width, position->y - height);
+			strokeRect(position.x, position.y, position.x + width, position.y - height);
 
 #ifdef DEBUG_ROOMS
 			glColor(Colour(1.0, 1.0, 0.0).mix(tint, tintAmount));
-			strokerect(coord->x - 1, coord->y + 1, coord->x + 1, coord->y - 1);
+			strokerect(coord.x - 1, coord.y + 1, coord.x + 1, coord.y - 1);
 #endif
 		}
 */
 		void Position(Vector2 newPosition) {
-			position->x = newPosition.x;
-			position->y = newPosition.y;
+			position.x = newPosition.x;
+			position.y = newPosition.y;
 		}
 
-		Vector2 *Position() const {
+		const Vector2 &Position() const {
+			return position;
+		}
+
+		Vector2 &Position() {
 			return position;
 		}
 
 		void Coord(const Vector2 &coord) {
-			this->coord->x = coord.x;
-			this->coord->y = coord.y;
+			this->coord.x = coord.x;
+			this->coord.y = coord.y;
 		}
 
 		const std::vector<Vector2> Connections() const {
@@ -294,8 +293,8 @@ class Room {
 
 			for (Vector2i connection : connections) {
 				transformedConnections.push_back(Vector2(
-					position->x + connection.x + 0.5,
-					position->y - connection.y - 0.5
+					position.x + connection.x + 0.5,
+					position.y - connection.y - 0.5
 				));
 			}
 
@@ -320,8 +319,8 @@ class Room {
 			if (connectionId >= connections.size()) return Vector2(0, 0);
 			Vector2i connection = connections[connectionId];
 			return Vector2(
-				position->x + connection.x + 0.5,
-				position->y - connection.y - 0.5
+				position.x + connection.x + 0.5,
+				position.y - connection.y - 0.5
 			);
 		}
 
@@ -598,14 +597,15 @@ class Room {
 		std::vector<Vertex> vertices;
 		std::vector<uint32_t> indices;
 		size_t cur_index;
+		size_t index_count;
 		GLuint vbo[2]; // first: vertices, second: indices
 		GLuint vao;
 
 		std::string path;
 		std::string roomName;
 
-		Vector2 *position;
-		Vector2 *coord;
+		Vector2 position;
+		Vector2 coord;
 
 		int width;
 		int height;
