@@ -73,7 +73,7 @@ void applyFrustumToOrthographic(Vector2 position, float rotation, Vector2 scale,
 	Draw::loadIdentity();
 	Draw::ortho(left, right, bottom, top, nearVal, farVal);
 
-	Draw::multMatrix(Draw::Matrix4f(rotationMatrix));
+	Draw::multMatrix(Draw::mat4(rotationMatrix));
 }
 
 void applyFrustumToOrthographic(Vector2 position, float rotation, Vector2 scale) {
