@@ -1,9 +1,7 @@
+#pragma once
 #include <iostream>
 #include <cmath>
 #include <string>
-
-#ifndef VECTOR_HPP
-#define VECTOR_HPP
 
 template <typename T>
 struct BasicVector2 {
@@ -32,7 +30,7 @@ struct BasicVector2 {
 	}
 
 	double distanceTo(const BasicVector2<T> &other) {
-		return std::sqrt(pow(x - other.x, 2) + pow(y - other.y, 2));
+		return std::sqrt(pow((float)(x - other.x), 2) + pow((float)(y - other.y), 2));
 	}
 
 	BasicVector2<T> operator+(const BasicVector2<T> &other) const {
@@ -64,22 +62,23 @@ struct BasicVector2 {
 			(a.y > b.y) ? a.y : b.y
 		);
 	}
+
+	inline operator BasicVector2<float>() const noexcept {
+		return BasicVector2<float>((float)x, (float)y);
+	}
+
+	inline operator BasicVector2<double>() const noexcept {
+		return BasicVector2<double>((double)x, (double)y);
+	}
+
+	inline explicit operator BasicVector2<int>() const noexcept {
+		return BasicVector2<int>((int)x, (int)y);
+	}
 };
 
 using Vector2 = BasicVector2<double>;
 using Vector2f = BasicVector2<float>;
-
-class Vector2i {
-	public:
-		int x;
-		int y;
-
-		Vector2i() {}
-
-		Vector2i(int x, int y) : x(x), y(y) {}
-
-		Vector2i(const Vector2i &vector) : x(vector.x), y(vector.y) {}
-};
+using Vector2i = BasicVector2<int>;
 
 struct Vector3f {
     float x, y, z;
@@ -108,26 +107,39 @@ struct Vector3f {
     }
 };
 
-
 // Vector2
 std::ostream &operator<<(std::ostream &stream, Vector2 &obj);
 
-bool operator==(const Vector2 &lhs, const Vector2 &rhs);
+template <typename T>
+bool operator==(const BasicVector2<T> &lhs, const BasicVector2<T> &rhs) {
+	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+}
 
-Vector2 operator*(const Vector2 &lhs, const double &rhs);
+template <typename Tv, typename Ts>
+Vector2 operator*(const BasicVector2<Tv> &lhs, const Ts &rhs) {
+	return Vector2(lhs.x * rhs, lhs.y * rhs);
+}
 
-Vector2 operator*(const double &lhs, const Vector2 &rhs);
+template <typename Ts, typename Tv>
+Vector2 operator*(const Ts &lhs, const BasicVector2<Tv> &rhs) {
+	return Vector2(lhs * rhs.x, lhs * rhs.y);
+}
 
-std::string to_string(const Vector2 &vector);
+template <typename T>
+std::string to_string(const BasicVector2<T> &vector) {
+	return "(" + std::to_string(vector.x) + ", " + std::to_string(vector.y) + ")";
+}
 
-// Vector2i
-std::ostream &operator<<(std::ostream &stream, Vector2i &obj);
+template <typename T>
+std::ostream &operator<<(std::ostream &stream, BasicVector2<T> &obj) {
+	return stream << "(" << obj.x << ", " << obj.y << ")";
+}
 
-bool operator==(const Vector2i &lhs, const Vector2i &rhs);
-
-void operator+=(Vector2i &lhs, const Vector2i &rhs);
-
-std::string to_string(const Vector2i &vector);
+template <typename T>
+void operator+=(BasicVector2<T> &lhs, const BasicVector2<T> &rhs) {
+	lhs.x += rhs.x;
+	lhs.y += rhs.y;
+}
 
 // Vector3f
 std::ostream &operator<<(std::ostream &stream, Vector3f &vec);
@@ -163,5 +175,3 @@ template <typename T>
 inline constexpr Vector3f operator/(const T s, const Vector3f &v) {
     return Vector3f(v.x / s, v.y / s, v.z / s);
 }
-
-#endif

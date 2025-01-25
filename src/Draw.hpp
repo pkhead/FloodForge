@@ -56,13 +56,13 @@ namespace Draw {
      */
     void useTexture(GLuint textureId);
 
-    void vertex(const Vector3f &pt);
     void vertex(const vec3 &pt);
     void texCoord(const vec2 &texCoord);
     void color(const col4 &color);
 
     inline void vertex(float x, float y, float z) { vertex({ x, y, z }); };
     inline void vertex(float x, float y) { vertex({ x, y, 0.0f }); };
+    inline void vertex(const vec2 &pt) { vertex({ pt.x, pt.y, 0.0f }); };
     inline void texCoord(float u, float v) { texCoord({ u, v }); };
     inline void color(float r, float g, float b, float a) { color({ r, g, b, a }); };
     inline void color(float r, float g, float b) { color(r, g, b, 1.0f); };
