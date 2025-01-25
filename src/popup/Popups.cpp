@@ -7,10 +7,11 @@
 
 GLuint Popups::textureUI = 0;
 std::vector<Popup*> Popups::popupTrash;
+std::vector<Popup*> Popups::popups;
 
 void Popups::cleanup() {
 	for (Popup *popup : Popups::popupTrash) {
-		popups.erase(std::remove(popups.begin(), popups.end(), popup), popups.end());
+		Popups::popups.erase(std::remove(Popups::popups.begin(), Popups::popups.end(), popup), Popups::popups.end());
 		
 		delete popup;
 	}
@@ -18,8 +19,7 @@ void Popups::cleanup() {
 	Popups::popupTrash.clear();
 }
 
-Popup::Popup(Window *window) : bounds(Rect(-0.5, -0.5, 0.5, 0.5)) {
-	this->window = window;
+Popup::Popup(Window *window) : bounds(Rect(-0.5, -0.5, 0.5, 0.5)), window(window) {
 }
 
 void Popup::draw(double mouseX, double mouseY, bool mouseInside) {
@@ -92,7 +92,7 @@ void Popup::mouseClick(double mouseX, double mouseY) {
 }
 
 void Popup::close() {
-	removePopup(this);
+	Popups::removePopup(this);
 }
 
 bool Popup::drag(double mouseX, double mouseY) {
@@ -106,12 +106,9 @@ void Popup::offset(Vector2 offset) {
 	bounds.offset(offset);
 }
 
-
-std::vector<Popup*> popups;
-
-void addPopup(Popup *popup) {
+void Popups::addPopup(Popup *popup) {
 	bool canStack = true;
-	for (Popup *otherPopup : popups) {
+	for (Popup *otherPopup : Popups::popups) {
 		if (!otherPopup->canStack(popup->PopupName())) {
 			canStack = false;
 			break;
@@ -119,12 +116,20 @@ void addPopup(Popup *popup) {
 	}
 	
 	if (canStack) {
-		popups.push_back(popup);
+		Popups::popups.push_back(popup);
 	} else {
-		Popups::popupTrash.push_back(popup);
+		popup->close();
 	}
 }
 
-void removePopup(Popup *popup) {
+void Popups::removePopup(Popup *popup) {
 	Popups::popupTrash.push_back(popup);
+}
+
+void Popups::draw(Vector2 mouse) {
+	for (Popup *popup : Popups::popups) {
+		Rect bounds = popup->Bounds();
+
+		popup->draw(mouse.x, mouse.y, bounds.inside(mouse));
+	}
 }

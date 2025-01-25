@@ -23,40 +23,43 @@ void MenuItems::init(Window *window) {
 
     addButton("New",
         [window](Button *button) {
-            addPopup(new AcronymPopup(window));
+            Popups::addPopup(new AcronymPopup(window));
         }
     );
 
     addButton("Add Room",
         [window](Button *button) {
             if (worldAcronym == "") {
-                addPopup(new WarningPopup(window, "You must create or import a region\nbefore adding rooms."));
+                Popups::addPopup(new WarningPopup(window, "You must create or import a region\nbefore adding rooms."));
                 return;
             }
 
-            addPopup(new FilesystemPopup(window, std::regex("([^.]+)_[a-zA-Z0-9]+\\.txt"),
-                [](std::string pathString) {
-                    if (pathString == "") return;
+            Popups::addPopup((new FilesystemPopup(window, std::regex("([^.]+)_[a-zA-Z0-9]+\\.txt"),
+                [](std::set<std::string> pathStrings) {
+                    if (pathStrings.empty()) return;
 
-                    std::filesystem::path path = pathString;
+                    for (std::string pathString : pathStrings) {
+                        std::filesystem::path path = pathString;
 
-                    std::string roomName = path.filename().string();
-                    roomName = roomName.substr(0, roomName.find_last_of('.'));
+                        std::string roomName = path.filename().string();
+                        roomName = roomName.substr(0, roomName.find_last_of('.'));
 
-                    Room *room = new Room(path.string().substr(0, path.string().find_last_of('.')), roomName);
-                    rooms.push_back(room);
+                        Room *room = new Room(path.string().substr(0, path.string().find_last_of('.')), roomName);
+                        room->Position(cameraOffset);
+                        rooms.push_back(room);
+                    }
                 }
-            ));
+            ))->AllowMultiple());
         }
     );
 
     addButton("Import",
         [window](Button *button) {
-            addPopup(new FilesystemPopup(window, std::regex("world_([^.]+)\\.txt"),
-                [](std::string pathString) {
-                    if (pathString == "") return;
+            Popups::addPopup(new FilesystemPopup(window, std::regex("world_([^.]+)\\.txt"),
+                [](std::set<std::string> pathStrings) {
+                    if (pathStrings.empty()) return;
 
-                    std::filesystem::path path = pathString;
+                    std::filesystem::path path = *pathStrings.begin();
 
                     exportDirectory = path.parent_path();
                     worldAcronym = toLower(path.filename().string());
@@ -100,23 +103,23 @@ void MenuItems::init(Window *window) {
                 exportMapFile();
                 exportWorldFile();
                 exportImageFile(exportDirectory / ("map_" + worldAcronym + ".png"), exportDirectory / ("map_" + worldAcronym + "_2.png"));
-                addPopup(new WarningPopup(window, "Exported successfully!"));
+                Popups::addPopup(new WarningPopup(window, "Exported successfully!"));
             } else {
                 if (worldAcronym == "") {
-                    addPopup(new WarningPopup(window, "You must create or import a region\nbefore exporting."));
+                    Popups::addPopup(new WarningPopup(window, "You must create or import a region\nbefore exporting."));
                     return;
                 }
 
-                addPopup(new FilesystemPopup(window, TYPE_FOLDER,
-                    [window](std::string pathString) {
-                        if (pathString.empty()) return;
+                Popups::addPopup(new FilesystemPopup(window, TYPE_FOLDER,
+                    [window](std::set<std::string> pathStrings) {
+                        if (pathStrings.empty()) return;
 
-                        exportDirectory = pathString;
+                        exportDirectory = *pathStrings.begin();
 
                         exportMapFile();
                         exportWorldFile();
                         exportImageFile(exportDirectory / ("map_" + worldAcronym + ".png"), exportDirectory / ("map_" + worldAcronym + "_2.png"));
-                        addPopup(new WarningPopup(window, "Exported successfully!"));
+                        Popups::addPopup(new WarningPopup(window, "Exported successfully!"));
                     }
                 ));
             }
@@ -134,6 +137,22 @@ void MenuItems::init(Window *window) {
             } else {
                 button->Text("Subregion Colours");
             }
+
+            repositionButtons();
+        }
+    );
+
+    addButton("Tile Snap",
+        [window](Button *button) {
+            if (::roomSnap == ROOM_SNAP_NONE) {
+                ::roomSnap = ROOM_SNAP_TILE;
+                button->Text("Tile Snap");
+            } else {
+                ::roomSnap = ROOM_SNAP_NONE;
+                button->Text("No Snap");
+            }
+            
+            repositionButtons();
         }
     );
 }

@@ -71,12 +71,20 @@ class Button {
 			}
 		}
 
-		void Text(std::string text) {
+		void Text(const std::string text) {
 			this->text = text;
 			width = font->getTextWidth(text, height);
 		}
 
-		std::string Text() { return text; }
+		std::string Text() const { return text; }
+
+		void X(const double x) {
+			this->x = x;
+		}
+
+		const double Width() const {
+			return width;
+		}
 
 	private:
 		void press() {
@@ -221,6 +229,10 @@ class MenuItems {
 					position.x = x - room->Width() * 0.5;
 					position.y = y + room->Height() * 0.5;
 					room->Layer(layer);
+					if (layer >= LAYER_HIDDEN && layer <= LAYER_HIDDEN + 2) {
+						room->Hidden(true);
+						room->Layer(layer - LAYER_HIDDEN);
+					}
 
 					if (subregion.empty()) {
 						room->Subregion(-1);
@@ -421,7 +433,7 @@ class MenuItems {
 
 			std::cout << "Exporting rooms" << std::endl;
 			for (Room *room : rooms) {
-				Vector2 &roomPosition = room->Position();
+				const Vector2 &roomPosition = room->Position();
 				Vector2 position = Vector2(
 					(roomPosition.x + room->Width() * 0.5) * 3.0,
 					(roomPosition.y - room->Height() * 0.5) * 3.0
@@ -431,13 +443,19 @@ class MenuItems {
 				file << toUpper(room->RoomName()) << ": ";
 				file << position.x << "><" << position.y << "><"; // Canon Position
 				file << position.x << "><" << position.y << "><"; // Dev Position
-				file << room->Layer() << "><";
+				if (room->Hidden()) {
+					file << (LAYER_HIDDEN + room->Layer()) << "><";
+				} else {
+					file << room->Layer() << "><";
+				}
 				if (room->Subregion() > -1) file << subregions[room->Subregion()];
 				file << "\n";
 			}
 
 			std::cout << "Exporting connections" << std::endl;
 			for (Connection *connection : connections) {
+				if (connection->RoomA()->Hidden() || connection->RoomB()->Hidden()) continue;
+
 				Vector2i connectionA = connection->RoomA()->getShortcutConnection(connection->ConnectionA());
 				Vector2i connectionB = connection->RoomB()->getShortcutConnection(connection->ConnectionB());
 
@@ -499,6 +517,8 @@ class MenuItems {
 			Rect bounds;
 
 			for (Room *room : rooms) {
+				if (room->Hidden()) continue;
+
 				double left   = room->Position().x;
 				double right  = room->Position().x + room->Width();
 				double top    = -room->Position().y + room->Height();
@@ -550,6 +570,7 @@ class MenuItems {
 
 			for (Room *room : rooms) {
 				if (room->Tag() == "OffscreenRoom") continue;
+				if (room->Hidden()) continue;
 
 				// Top left corner
 				int x = std::floor(room->Position().x - room->Width() * 0.0 - bounds.X0()) + padding;
@@ -761,6 +782,16 @@ class MenuItems {
 		static std::string extraWorld;
 
 	private:
+		static void repositionButtons() {
+			currentButtonX = -0.99;
+
+			for (Button *button : buttons) {
+				button->X(currentButtonX);
+
+				currentButtonX += button->Width() + 0.04;
+			}
+		}
+	
 		static std::vector<Button*> buttons;
 
 		static Window *window;

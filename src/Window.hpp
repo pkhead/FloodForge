@@ -172,6 +172,18 @@ class Window {
 		bool keyPressed(uint16_t key) {
 			return GLFW_PRESS == glfwGetKey(glfwWindow, key);
 		}
+		
+		bool modifierPressed(uint16_t modifier) {
+			switch (modifier) {
+				case GLFW_MOD_CONTROL:
+					return keyPressed(GLFW_KEY_LEFT_CONTROL) || keyPressed(GLFW_KEY_RIGHT_CONTROL) || keyPressed(GLFW_KEY_LEFT_SUPER) || keyPressed(GLFW_KEY_RIGHT_SUPER);
+
+				case GLFW_MOD_SHIFT:
+					return keyPressed(GLFW_KEY_LEFT_SHIFT) || keyPressed(GLFW_KEY_RIGHT_SHIFT);
+			}
+
+			return false;
+		}
 
 		double getMouseScrollX() {
 			double scrollX = scrollXAccumulator;
@@ -260,6 +272,30 @@ class Window {
 			);
 		}
 
+		void clearCallbacks(void *object) {
+			keyCallbacks.erase(
+				std::remove_if(
+					keyCallbacks.begin(),
+					keyCallbacks.end(),
+					[&object](const std::pair<void*, std::function<void(void*, int, int)>>& p) {
+						return p.first == object;
+					}
+				),
+				keyCallbacks.end()
+			);
+			
+			scrollCallbacks.erase(
+				std::remove_if(
+					scrollCallbacks.begin(),
+					scrollCallbacks.end(),
+					[&object](const std::pair<void*, std::function<void(void*, double, double)>>& p) {
+						return p.first == object;
+					}
+				),
+				scrollCallbacks.end()
+			);
+		}
+
 		std::string getClipboard() {
 			const char* clipboardText = glfwGetClipboardString(glfwWindow);
 
@@ -310,6 +346,11 @@ class Window {
 			if (!window) return;
 
 			for (std::pair<void*, std::function<void(void*, int, int)>> callback : window->keyCallbacks) {
+				if (!callback.second) {
+					std::cout << "INVALID CALLBACK" << std::endl;
+					continue;
+				}
+
 				callback.second(callback.first, action, key);
 			}
 		}

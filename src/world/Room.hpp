@@ -7,17 +7,15 @@
 #include <vector>
 #include <iostream>
 #include <stack>
+#include <set>
 
 #include "../Texture.hpp"
-#include "../Grid.hpp"
 #include "../math/Vector.hpp"
 #include "../math/Matrix4.hpp"
 #include "../font/Fonts.hpp"
 
 #include "Shaders.hpp"
 #include "Globals.hpp"
-
-//#define DEBUG_ROOMS
 
 #ifndef ROOM_HPP
 #define ROOM_HPP
@@ -44,8 +42,6 @@ class Room {
 				0.0f
 			);
 
-			coord = new Vector2();
-
 			width = 1;
 			height = 1;
 
@@ -58,6 +54,7 @@ class Room {
 			subregion = -1;
 
 			tag = "";
+			hidden = false;
 
 			loadGeometry();
 			generateVBO();
@@ -66,6 +63,9 @@ class Room {
 		virtual ~Room() {
 			delete[] geometry;
 			geometry = nullptr;
+
+			glDeleteBuffers(2, vbo);
+			glDeleteVertexArrays(1, &vao);
 		}
 
 		bool inside(Vector2 otherPosition) {
@@ -82,10 +82,10 @@ class Room {
 			Vector2 cornerMax = Vector2::max(corner0, corner1);
 
 			return (
-				cornerMin.x >= position.x &&
-				cornerMin.y >= position.y - height &&
-				cornerMax.x <= position.x + width &&
-				cornerMax.y <= position.y
+				cornerMin.x <= position.x + width &&
+				cornerMin.y <= position.y &&
+				cornerMax.x >= position.x &&
+				cornerMax.y >= position.y - height
 			);
 		}
 
@@ -99,194 +99,20 @@ class Room {
 		}
 
 		virtual void draw(Vector2 mousePosition, double lineSize);
-/*
-		virtual void draw(Vector2 mousePosition, double lineSize) {
-			if (!valid) return;
-
-			Colour tint = Colour(1.0, 1.0, 1.0);
-			double tintAmount = 0.5;
-
-			if (::roomColours == 1) {
-				if (layer == 0) tint = Colour(1.0, 0.0, 0.0);
-				if (layer == 1) tint = Colour(1.0, 1.0, 1.0);
-				if (layer == 2) tint = Colour(0.0, 1.0, 0.0);
-			}
-			
-			if (::roomColours == 2) {
-				if (subregion == -1) tint = Colour(1.0, 1.0, 1.0);
-				if (subregion ==  0) tint = Colour(1.0, 0.0, 0.0);
-				if (subregion ==  1) tint = Colour(0.0, 1.0, 0.0);
-				if (subregion ==  2) tint = Colour(0.0, 0.0, 1.0);
-				if (subregion ==  3) tint = Colour(1.0, 1.0, 0.0);
-				if (subregion ==  4) tint = Colour(0.0, 1.0, 1.0);
-				if (subregion ==  5) tint = Colour(1.0, 0.0, 1.0);
-				if (subregion ==  6) tint = Colour(1.0, 0.5, 0.0);
-				if (subregion ==  7) tint = Colour(1.0, 1.0, 0.5);
-				if (subregion ==  8) tint = Colour(0.5, 1.0, 0.0);
-				if (subregion ==  9) tint = Colour(1.0, 1.0, 0.5);
-				if (subregion == 10) tint = Colour(0.5, 0.0, 1.0);
-				if (subregion == 11) tint = Colour(1.0, 0.5, 1.0);
-			}
-
-			glColor(Colour(1.0, 1.0, 1.0).mix(tint, tintAmount));
-			fillRect(position.x, position.y, position.x + width, position.y - height);
-
-			Draw::begin(Draw::QUADS);
-			for (int x = 0; x < width; x++) {
-				for (int y = 0; y < height; y++) {
-					int tileType = getTile(x, y) % 16;
-					int tileData = getTile(x, y) / 16;
-
-					float x0 = position.x + x;
-					float y0 = position.y - y;
-					float x1 = position.x + x + 1;
-					float y1 = position.y - y - 1;
-					float x2 = (x0 + x1) * 0.5;
-					float y2 = (y0 + y1) * 0.5;
-
-					if (tileType == 1) {
-						glColor(Colour(0.125, 0.125, 0.125).mix(tint, tintAmount));
-						Draw::vertex(x0, y0);
-						Draw::vertex(x1, y0);
-						Draw::vertex(x1, y1);
-						Draw::vertex(x0, y1);
-					}
-					if (tileType == 4) {
-						glColor(Colour(0.0, 1.0, 1.0).mix(tint, tintAmount));
-						Draw::vertex(x0, y0);
-						Draw::vertex(x1, y0);
-						Draw::vertex(x1, y1);
-						Draw::vertex(x0, y1);
-					}
-					if (tileType == 2) {
-						glColor(Colour(1.0, 0.0, 0.0).mix(tint, tintAmount));
-
-						int bits = 0;
-						bits += (getTile(x - 1, y) == 1) ? 1 : 0;
-						bits += (getTile(x + 1, y) == 1) ? 2 : 0;
-						bits += (getTile(x, y - 1) == 1) ? 4 : 0;
-						bits += (getTile(x, y + 1) == 1) ? 8 : 0;
-
-						if (bits == 1 + 4) {
-							Draw::vertex(x0, y0);
-							Draw::vertex(x1, y0);
-							Draw::vertex(x0, y1);
-							Draw::vertex(x0, y0);
-						} else if (bits == 1 + 8) {
-							Draw::vertex(x0, y1);
-							Draw::vertex(x1, y1);
-							Draw::vertex(x0, y0);
-							Draw::vertex(x0, y1);
-						} else if (bits == 2 + 4) {
-							Draw::vertex(x1, y0);
-							Draw::vertex(x0, y0);
-							Draw::vertex(x1, y1);
-							Draw::vertex(x1, y0);
-						} else if (bits == 2 + 8) {
-							Draw::vertex(x1, y1);
-							Draw::vertex(x0, y1);
-							Draw::vertex(x1, y0);
-							Draw::vertex(x1, y1);
-						}
-					}
-					if (tileType == 3) {
-						glColor(Colour(0.0, 1.0, 0.0).mix(tint, tintAmount));
-						Draw::vertex(x0, y0);
-						Draw::vertex(x1, y0);
-						Draw::vertex(x1, (y0 + y1) * 0.5f);
-						Draw::vertex(x0, (y0 + y1) * 0.5f);
-					}
-
-					if (tileData & 1) { // 16 - Vertical Pole
-						glColor(Colour(0.0, 0.0, 1.0).mix(tint, tintAmount));
-						Draw::vertex(x0 + 0.375, y0);
-						Draw::vertex(x1 - 0.375, y0);
-						Draw::vertex(x1 - 0.375, y1);
-						Draw::vertex(x0 + 0.375, y1);
-					}
-
-					if (tileData & 2) { // 32 - Horizontal Pole
-						glColor(Colour(0.0, 0.0, 1.0).mix(tint, tintAmount));
-						Draw::vertex(x0, y0 - 0.375);
-						Draw::vertex(x1, y0 - 0.375);
-						Draw::vertex(x1, y1 + 0.375);
-						Draw::vertex(x0, y1 + 0.375);
-					}
-
-					if (tileData & 4) { // 64 - Room Exit
-						glColor(Colour(1.0, 0.0, 1.0).mix(tint, tintAmount));
-						Draw::vertex(x0 + 0.25, y0 - 0.25);
-						Draw::vertex(x1 - 0.25, y0 - 0.25);
-						Draw::vertex(x1 - 0.25, y1 + 0.25);
-						Draw::vertex(x0 + 0.25, y1 + 0.25);
-					}
-
-					if (tileData & 8) { // 128 - Shortcut
-						glColor(Colour(0.125, 0.125, 0.125).mix(tint, tintAmount));
-						Draw::vertex(x0 + 0.40625, y0 - 0.40625);
-						Draw::vertex(x1 - 0.40625, y0 - 0.40625);
-						Draw::vertex(x1 - 0.40625, y1 + 0.40625);
-						Draw::vertex(x0 + 0.40625, y1 + 0.40625);
-
-						glColor(Colour(1.0, 1.0, 1.0).mix(tint, tintAmount));
-						Draw::vertex(x0 + 0.4375, y0 - 0.4375);
-						Draw::vertex(x1 - 0.4375, y0 - 0.4375);
-						Draw::vertex(x1 - 0.4375, y1 + 0.4375);
-						Draw::vertex(x0 + 0.4375, y1 + 0.4375);
-					}
-				}
-			}
-			Draw::end();
-
-			if (debugRoomConnections) {
-				for (int x = 0; x < width; x++) {
-					for (int y = 0; y < height; y++) {
-						if (!((getTile(x, y) / 16) & 4)) continue;
-
-						float x0 = position.x + x;
-						float y0 = position.y - y;
-
-						glColor(Colour(1.0, 1.0, 1.0).mix(tint, tintAmount));
-						Fonts::rainworld->writeCentred(std::to_string(getConnection(Vector2i(x, y))), x0 + 0.5, y0 - 0.5, 3.0, CENTER_XY);
-					}
-				}
-			}
-
-			if (water != -1) {
-				glColor(Colour(0.0, 0.0, 0.5, 0.5).mix(tint, tintAmount));
-				fillRect(position.x, position.y - (height - std::min(water, height)), position.x + width, position.y - height);
-			}
-
-			if (inside(mousePosition)) {
-				glColor(Colour(0.00, 0.75, 0.00).mix(tint, tintAmount));
-			} else {
-				glColor(Colour(0.75, 0.75, 0.75).mix(tint, tintAmount));
-			}
-			strokeRect(position.x, position.y, position.x + width, position.y - height);
-
-#ifdef DEBUG_ROOMS
-			glColor(Colour(1.0, 1.0, 0.0).mix(tint, tintAmount));
-			strokerect(coord.x - 1, coord.y + 1, coord.x + 1, coord.y - 1);
-#endif
-		}
-*/
-		void Position(Vector2 newPosition) {
-			position.x = newPosition.x;
-			position.y = newPosition.y;
-		}
-
-		const Vector2 &Position() const {
-			return position;
+		
+		void Position(Vector2 position) {
+			this->position.x = position.x;
+			this->position.y = position.y;
 		}
 
 		Vector2 &Position() {
 			return position;
 		}
 
-		void Coord(const Vector2 &coord) {
-			this->coord.x = coord.x;
-			this->coord.y = coord.y;
-		}
+		// void Coord(const Vector2 &coord) {
+		// 	this->coord.x = coord.x;
+		// 	this->coord.y = coord.y;
+		// }
 
 		const std::vector<Vector2> Connections() const {
 			std::vector<Vector2> transformedConnections;
@@ -315,9 +141,18 @@ class Room {
 			return -1;
 		}
 
-		const Vector2 getConnection(unsigned int connectionId) const {
+		const Vector2 getConnectionPosition(unsigned int connectionId) const {
 			if (connectionId >= connections.size()) return Vector2(0, 0);
 			Vector2i connection = connections[connectionId];
+			return Vector2(
+				position.x + connection.x + 0.5,
+				position.y - connection.y - 0.5
+			);
+		}
+
+		const Vector2 getShortcutConnectionPosition(unsigned int connectionId) const {
+			if (connectionId >= connections.size()) return Vector2(0, 0);
+			Vector2i connection = getShortcutConnection(connectionId);
 			return Vector2(
 				position.x + connection.x + 0.5,
 				position.y - connection.y - 0.5
@@ -429,6 +264,9 @@ class Room {
 
 		void Subregion(const int newSubregion) { subregion = newSubregion; }
 		const int Subregion() { return subregion; }
+
+		void Hidden(const bool newHidden) { hidden = newHidden; }
+		const bool Hidden() const { return hidden; }
 
 	protected:
 		Room() {}
@@ -547,9 +385,9 @@ class Room {
 			std::getline(geometryFile, tempLine); // Junk
 			std::getline(geometryFile, tempLine); // Junk
 
-			std::cout << "Data for " << roomName << "\n"
-			<< "Width: " << width << "\n"
-			<< "Height: " << height << "\n";
+			// std::cout << "Data for " << roomName << "\n"
+			// << "Width: " << width << "\n"
+			// << "Height: " << height << "\n";
 
 			// Collision Data
 			geometry = new int[width * height];
@@ -605,7 +443,7 @@ class Room {
 		std::string roomName;
 
 		Vector2 position;
-		Vector2 coord;
+		// Vector2 coord;
 
 		int width;
 		int height;
@@ -615,6 +453,7 @@ class Room {
 		int subregion;
 
 		std::string tag;
+		bool hidden;
 
 		bool valid;
 

@@ -5,9 +5,15 @@
 #ifndef GLOBALS_HPP
 #define GLOBALS_HPP
 
-extern bool debugRoomConnections;
+#define LAYER_HIDDEN 5
+
+#define ROOM_SNAP_NONE 0
+#define ROOM_SNAP_TILE 1
+
+extern std::string ROOM_TAGS[9];
 
 extern int roomColours;
+extern int roomSnap;
 
 #include "Room.hpp"
 #include "Connection.hpp"

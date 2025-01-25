@@ -36,7 +36,11 @@ void Room::draw(Vector2 mousePosition, double lineSize) {
 
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, projectionMatrix(cameraOffset, cameraScale).m);
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, modelMatrix(position.x, position.y).m);
-    glUniform4f(tintLoc, tint.R(), tint.G(), tint.B(), tint.A());
+    if (hidden) {
+        glUniform4f(tintLoc, tint.R(), tint.G(), tint.B(), 0.5f);
+    } else {
+        glUniform4f(tintLoc, tint.R(), tint.G(), tint.B(), tint.A());
+    }
 
     glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, nullptr);
 
@@ -54,8 +58,8 @@ void Room::draw(Vector2 mousePosition, double lineSize) {
     } else {
         Draw::color(Colour(0.75, 0.75, 0.75));
     }
-    strokeRect(position.x, position.y, position.x + width, position.y - height);
     Draw::flushOnEnd = true;
+    strokeRect(position.x, position.y, position.x + width, position.y - height);
 }
 
 void Room::addQuad(const Vertex &a, const Vertex &b, const Vertex &c, const Vertex &d) {
@@ -191,12 +195,12 @@ void Room::generateVBO() {
             }
 
             if (tileData & 4) { // 64 - Room Exit
-                addQuad(
-                    { x0 + 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
-                    { x1 - 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
-                    { x1 - 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 },
-                    { x0 + 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 }
-                );
+                // addQuad(
+                //     { x0 + 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
+                //     { x1 - 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
+                //     { x1 - 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 },
+                //     { x0 + 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 }
+                // );
             }
 
             if (tileData & 8) { // 128 - Shortcut
@@ -215,6 +219,20 @@ void Room::generateVBO() {
                 );
             }
         }
+    }
+
+    for (Vector2i &shortcutEntrance : shortcutEntrances) {
+        float x0 = position.x + shortcutEntrance.x;
+        float y0 = position.y - shortcutEntrance.y;
+        float x1 = position.x + shortcutEntrance.x + 1;
+        float y1 = position.y - shortcutEntrance.y - 1;
+        
+        addQuad(
+            { x0 + 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
+            { x1 - 0.25f, y0 - 0.25f, 1.0, 0.0, 1.0 },
+            { x1 - 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 },
+            { x0 + 0.25f, y1 + 0.25f, 1.0, 0.0, 1.0 }
+        );
     }
 
     glBindVertexArray(vao);
