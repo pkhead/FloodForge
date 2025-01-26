@@ -24,6 +24,8 @@ do
             ;;
         level) app=level
             ;;
+        uitest) app=uitest
+            ;;
         clean) app=clean
             ;;
         *) makeargs="$makeargs $1"
@@ -52,6 +54,8 @@ if [[ "$app" == "world" ]]; then
     make -f build/world.mk $makeargs
 elif [[ "$app" == "level" ]]; then
     make -f build/level.mk $makeargs
+elif [[ "$app" == "uitest" ]]; then
+    make -f build/uitest.mk $makeargs
 else
     exit 1
 fi
