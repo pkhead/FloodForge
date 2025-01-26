@@ -12,7 +12,7 @@ INCLUDES = -I"include/"
 
 # debug/release mode
 ifeq ($(buildmode),debug)
-  CPPFLAGS += -g -Og
+  CPPFLAGS += -g -O0
 else ifeq ($(buildmode),release)
   CPPFLAGS += -O2
   ifeq ($(OS),Windows_NT)
@@ -23,11 +23,10 @@ endif
 # determine libs to link with based off platform
 REQPKGS=
 ifeq ($(OS),Windows_NT)
-  LIBS += build/resource.o lib/GLFW/libglfw3.a -lgdi32 -lopengl32 -luser32 -lcomdlg32 -lole32
+  LIBS += build/resource.o lib/GLFW/libglfw3.a -lgdi32 -luser32 -lcomdlg32 -lole32
 else
   # items to plug into pkg-config to find libs and includes
   REQPKGS += glfw3
-  LIBS += -lGL
 endif
 
 # find libs and includes from REQPKGS list. works if empty.
@@ -38,7 +37,12 @@ LIBS += $(foreach pkg,$(REQPKGS),$(shell pkg-config --libs $(pkg)))
 OBJS = $(addprefix build/obj/, $(shell realpath --relative-to src $(patsubst %.c,%.o,$(SOURCES:%.cpp=%.o))))
 
 # link all .o files to build FloodForge executable
-FloodForge: pkgcheck $(OBJS)
+FloodForge: $(OBJS)
+  # check if any required packages are missing. if so, stop compilation.
+  ifneq ($(shell $(foreach pkg,$(REQPKGS),pkg-config --exists $(pkg) &&) echo 1),1)
+  $(error Missing required packages: $(foreach pkg,$(REQPKGS),$(shell pkg-config --exists $(pkg) || echo $(pkg))))
+  endif
+
 	@echo [LNK] $@
 	@$(CXX) -o $@ $(CPPFLAGS) $(OBJS) $(LIBS)
 
@@ -61,11 +65,4 @@ build/.depend: $(SOURCES)
 	@$(CXX) -MM $^ $(CPPFLAGS) $(INCLUDES) > $@ && \
 	sed -Ei 's#^(.*\.o: *)src/(.*/)?(.*\.cpp)#build/obj/\2\1src/\2\3#' $@
 
-# check if any required packages are missing. if so, stop compilation.
-pkgcheck:
-  ifneq ($(shell $(foreach pkg,$(REQPKGS),pkg-config --exists $(pkg) &&) echo 1),1)
-  $(error Missing required packages: $(foreach pkg,$(REQPKGS),$(shell pkg-config --exists $(pkg) || echo $(pkg))))
-  endif	
-
-.PHONY: pkgcheck
 include build/.depend
