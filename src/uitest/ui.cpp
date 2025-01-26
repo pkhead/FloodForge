@@ -160,62 +160,191 @@ void ui::UiElement::remove(ui::UiElement *element) {
     }
 }
 
-ui::Button::Button(const std::string &text) {
+
+
+
+
+
+
+
+
+
+
+
+void ui::UiInteractable::update() {
+    UiElement::update();
+
+    for (auto &interact : _interactables) {
+        interact.isHovered = false;
+    }
+}
+
+bool ui::UiInteractable::interactInput(int index, Interactable &interact) {
+    vec2 pos = _globalPos + interact.pos;
+
+    interact.isHovered =
+        mousePos.x > pos.x && mousePos.x < pos.x + interact.size.x &&
+        mousePos.y > pos.y && mousePos.y < pos.y + interact.size.y;
+    
+    if (interact.isHovered && mousePressed(MOUSE_BUTTON_LEFT)) {
+        activeElement = shared_from_this();
+        _activeInteractable = index;
+        event(index, EVENT_PRESS);
+    }
+
+    if (mouseReleased(MOUSE_BUTTON_LEFT) && activeElement.get() == this && _activeInteractable == index) {
+        activeElement = nullptr;
+        if (interact.isHovered) {
+            event(index, EVENT_CLICK);
+        }
+        event(index, EVENT_RELEASE);
+    }
+
+    return interact.isHovered;
+}
+
+bool ui::UiInteractable::handleInput() {
+    bool isActive = activeElement.get() == this;
+    if (isActive) {
+        interactInput(_activeInteractable, _interactables[_activeInteractable]);
+        return true;
+    }
+
+    int i = 0;
+    for (auto it = _interactables.begin(); it != _interactables.end(); it++) {
+        if (interactInput(i, *it)) {
+            return true;
+        }
+
+        i++;
+    }
+
+    return UiElement::handleInput();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ui::UiButton::UiButton(const std::string &text) {
     this->text = text;
     fontSize = 18.f;
-    _isHovered = false;
     pos = Vector2(0.f, 0.f);
     size = Vector2(
         Fonts::rainworld->getTextWidth(this->text, fontSize) + 10.0,
         20.0f
     );
+
+    _interactables.push_back(Interactable( vec2(), vec2() ));
 }
 
-void ui::Button::update() {
-    UiElement::update();
-    _isHovered = false;
+void ui::UiButton::update() {
+    UiInteractable::update();
+    _interactables[0].size = size;
 }
 
-bool ui::Button::handleInput() {
-    if (UiElement::handleInput()) return true;
-    bool isActive = activeElement.get() == this;
-
-    _isHovered =
-        mousePos.x > _globalPos.x && mousePos.x < _globalPos.x + size.x &&
-        mousePos.y > _globalPos.y && mousePos.y < _globalPos.y + size.y;
-    
-    if (_isHovered && mousePressed(MOUSE_BUTTON_LEFT)) {
-        activeElement = shared_from_this();
+void ui::UiButton::event(int index, EventKind event) {
+    if (event == EVENT_CLICK) {
+        clickHandler(signal);
     }
-
-    if (mouseReleased(MOUSE_BUTTON_LEFT) && activeElement.get() == this) {
-        activeElement = nullptr;
-        if (_isHovered && clickHandler) {
-            clickHandler(signal);
-        }
-    }
-
-    return _isHovered;
 }
 
-void ui::Button::draw() const {
+void drawRect(ui::vec2 pos, ui::vec2 size) {
     Draw::begin(Draw::PrimitiveType::QUADS);
+    Draw::vertex(pos);
+    Draw::vertex(pos + Vector2(size.x, 0.f));
+    Draw::vertex(pos + Vector2(size.x, size.y));
+    Draw::vertex(pos + Vector2(0.f, size.y));
+    Draw::end();
+}
 
-    if (_isHovered || activeElement.get() == this) {
+void ui::UiButton::draw() const {
+    if (_interactables[0].isHovered || activeElement.get() == this) {
         Draw::color(0.6, 0.6, 0.6);
     } else {
         Draw::color(1, 1, 1);
     }
 
-    Draw::vertex(_globalPos);
-    Draw::vertex(_globalPos + Vector2(size.x, 0.f));
-    Draw::vertex(_globalPos + Vector2(size.x, size.y));
-    Draw::vertex(_globalPos + Vector2(0.f, size.y));
-    Draw::end();
+    drawRect(_globalPos, size);
 
     Draw::color(1, 0, 0);
     auto textWidth = Fonts::rainworld->getTextWidth(this->text, fontSize);
     Vector2 center = _globalPos + (size - Vector2(textWidth, -fontSize)) * 0.5f;
 
     Fonts::rainworld->writeCentered(text, center.x, center.y, fontSize, 0);
+}
+
+
+
+
+
+
+
+
+
+ui::UiHSplit::UiHSplit() {
+    split_pos = 40.0f;
+    dragging = false;
+    _interactables.push_back(Interactable( vec2(0.0f, 0.0f), vec2(0.0f, 0.0f) ));
+}
+
+void ui::UiHSplit::update() {
+    const float split_width = 8.0f;
+    _interactables[0].pos.x = split_pos - split_width / 2.f;
+    _interactables[0].size.x = split_width;
+    _interactables[0].size.y = size.y;
+
+    if (children().size() == 2) {
+        auto &first = children()[0];
+        auto &second = children()[1];
+
+        first->pos = vec2(0.0f, 0.0f);
+        first->size = vec2(split_pos - split_width / 2 - 4.f, size.y);
+
+        second->pos = vec2(split_pos + split_width / 2 + 4.f, 0.0f);
+        second->size = vec2(size.x - second->pos.x, size.y);
+    }
+
+    UiInteractable::update();
+}
+
+bool ui::UiHSplit::handleInput() {
+    if (UiInteractable::handleInput()) {
+        if (dragging) split_pos = mousePos.x - _globalPos.x;
+        return true;
+    }
+
+    return false;
+}
+
+void ui::UiHSplit::event(int index, EventKind ev) {
+    switch (ev) {
+        case UiInteractable::EVENT_PRESS:
+            dragging = true;
+            break;
+
+        case UiInteractable::EVENT_RELEASE:
+            dragging = false;
+            break;
+
+        default: break;
+    }
+}
+
+void ui::UiHSplit::draw() const {
+    UiInteractable::draw();
+    Draw::color(0.5f, 0.5f, 0.5f);
+    drawRect(_globalPos + _interactables[0].pos, _interactables[0].size);
 }

@@ -67,25 +67,66 @@ namespace ui {
         friend class UiContainer;
     };
 
-    class Button : public UiElement {
-    private:
-        bool _isHovered;
-        
+    class UiInteractable : public UiElement {
+    protected:
+        struct Interactable {
+            vec2 pos;
+            vec2 size;
+            bool isHovered;
+
+            inline Interactable(vec2 pos, vec2 size) : pos(pos), size(size) {}
+        };
+
+        std::vector<Interactable> _interactables;
+        int _activeInteractable;
+
+        enum EventKind {
+            EVENT_PRESS,
+            EVENT_RELEASE,
+            EVENT_CLICK
+        };
+
+        bool interactInput(int index, Interactable &interact);
+        virtual void event(int index, EventKind event) = 0;
+    public:
+        UiInteractable() {}
+
+        bool handleInput() override;
+        void update() override;
+    };
+
+    class UiHSplit : public UiInteractable {
+    protected:
+        void event(int index, EventKind event) override;
+        float split_pos;
+        bool dragging;
+    
+    public:
+        UiHSplit();
+
+        void draw() const override;
+        void update() override;
+        bool handleInput() override;
+    };
+
+    class UiButton : public UiInteractable {
+    protected:
+        void event(int index, EventKind event) override;
+
     public:
         std::string text;
         std::string signal;
 
         float fontSize;
-        Button(const std::string &text);
+        UiButton(const std::string &text);
 
         std::function<void(const std::string &signal)> clickHandler;
 
-        inline static std::shared_ptr<Button> create(const std::string &text) {
-            return std::make_shared<Button>(text);
+        inline static std::shared_ptr<UiButton> create(const std::string &text) {
+            return std::make_shared<UiButton>(text);
         }
 
         void draw() const override;
-        bool handleInput() override;
         void update() override;
     };
 }

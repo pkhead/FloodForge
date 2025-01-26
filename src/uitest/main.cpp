@@ -69,21 +69,29 @@ int main() {
 	Draw::init();
 
     ui::Ref<ui::UiElement> root = ui::root = std::make_shared<ui::UiElement>();
+	ui::Ref<ui::UiHSplit> split = std::make_shared<ui::UiHSplit>();
+	root->add(split);
 
 	{
-		auto button = ui::Button::create("Button 1");
+		auto button = ui::UiButton::create("Button 1");
 		button->signal = "BUT1";
 		button->clickHandler = clickHandler;
-		root->add(button);
+		split->add(button);
+
+		button->useAnchors = true;
+		button->anchorX = -1;
+		button->anchorY = 0;
 	}
 
 	{
-		auto button = ui::Button::create("Button 2");
+		auto button = ui::UiButton::create("Button 2");
 		button->signal = "BUT2";
 		button->clickHandler = clickHandler;
-		root->add(button);
+		split->add(button);
 
-		button->pos.x = 50.0f;
+		button->useAnchors = true;
+		button->anchorX = 1;
+		button->anchorY = 0;
 	}
 
 	while (window->isOpen()) {
@@ -95,7 +103,15 @@ int main() {
 		int height;
 		glfwGetWindowSize(window->getGLFWWindow(), &width, &height);
 
+		root->size.x = width;
+		root->size.y = height;
+
+		// TODO: full rect anchors
+		split->size.x = root->size.x;
+		split->size.y = root->size.y;
+
 		double mouseX, mouseY;
+
 		ui::beginFrame();
 		ui::setMousePos({ (float)window->GetMouse()->X(), height - (float)window->GetMouse()->Y() });
 		ui::setMouseButton(ui::MOUSE_BUTTON_LEFT, glfwGetMouseButton(window->getGLFWWindow(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
@@ -107,6 +123,9 @@ int main() {
         Draw::matrixMode(Draw::PROJECTION);
         Draw::loadIdentity();
         Draw::ortho(0.0f, (float)width, 0.0f, (float)height, 0.0f, 1.0f);
+
+		Draw::matrixMode(Draw::MODELVIEW);
+		Draw::loadIdentity();
 
 		window->clear();
 		glDisable(GL_DEPTH_TEST);
